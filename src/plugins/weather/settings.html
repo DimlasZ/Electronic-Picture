@@ -236,20 +236,22 @@
             document.getElementById('customTitle').value = pluginSettings.customTitle || '';
         } else {
             // set default values
-            document.getElementById('units').value = "imperial";
+            document.getElementById('latitude').value = "46.946219320241674";
+            document.getElementById('longitude').value = "7.44873046875";
+            document.getElementById('units').value = "metric";
             document.getElementById('displayRefreshTime').checked = true;
             document.getElementById('displayRefreshTime').value = "true";
             document.getElementById('displayMetrics').checked = true;
             document.getElementById('displayMetrics').value = "true";
             document.getElementById('displayGraph').checked = true;
             document.getElementById('displayGraph').value = "true";
-			document.getElementById('displayRain').checked = false;
-            document.getElementById('displayRain').value = "false";
+			document.getElementById('displayRain').checked = true;
+            document.getElementById('displayRain').value = "true";
 			document.getElementById('displayGraphIcons').checked = false;
 			document.getElementById('displayGraphIcons').value = "false";
             document.getElementById('displayForecast').checked = true;
             document.getElementById('displayForecast').value = "true";
-            document.getElementById('forecastDays').value = 7;
+            document.getElementById('forecastDays').value = 5;
             document.getElementById('moonPhase').checked = false;
 			document.getElementById('moonPhase').value = "false";
             document.getElementById('weatherTimeZone').value = "locationTimeZone";

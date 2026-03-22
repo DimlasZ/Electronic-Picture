@@ -13,30 +13,6 @@ logger = logging.getLogger(__name__)
 
 CLOCK_FACES = [
     {
-        "name": "Gradient Clock",
-        "primary_color": "#db3246",
-        "secondary_color": "#000000",
-        "icon": "faces/gradient.png"
-    },
-    {
-        "name": "Digital Clock",
-        "primary_color": "#ffffff",
-        "secondary_color": "#000000",
-        "icon": "faces/digital.png"
-    },
-    {
-        "name": "Divided Clock",
-        "primary_color": "#20b7ae",
-        "secondary_color": "#ffffff",
-        "icon": "faces/divided.png"
-    },
-    {
-        "name": "Word Clock",
-        "primary_color": "#000000",
-        "secondary_color": "#ffffff",
-        "icon": "faces/word.png"
-    },
-    {
         "name": "Word Clock (Schweizerdeutsch)",
         "primary_color": "#000000",
         "secondary_color": "#ffffff",
@@ -45,7 +21,7 @@ CLOCK_FACES = [
 ]
 
 DEFAULT_TIMEZONE = "US/Eastern"
-DEFAULT_CLOCK_FACE = "Gradient Clock"
+DEFAULT_CLOCK_FACE = "Word Clock (Schweizerdeutsch)"
 
 class Clock(BasePlugin):
     def generate_settings_template(self):
@@ -70,15 +46,7 @@ class Clock(BasePlugin):
 
         img = None
         try:
-            if clock_face == "Gradient Clock":
-                img = self.draw_conic_clock(dimensions, current_time, primary_color, secondary_color)
-            elif clock_face == "Digital Clock":
-                img = self.draw_digital_clock(dimensions, current_time, primary_color, secondary_color)
-            elif clock_face == "Divided Clock":
-                img = self.draw_divided_clock(dimensions, current_time, primary_color, secondary_color)
-            elif clock_face == "Word Clock":
-                img = self.draw_word_clock(dimensions, current_time, primary_color, secondary_color)
-            elif clock_face == "Word Clock (Schweizerdeutsch)":
+            if clock_face == "Word Clock (Schweizerdeutsch)":
                 img = self.draw_word_clock_ch(dimensions, current_time, primary_color, secondary_color)
         except Exception as e:
             logger.error(f"Failed to draw clock image: {str(e)}")
