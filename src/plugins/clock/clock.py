@@ -277,7 +277,7 @@ class Clock(BasePlugin):
         h_next = (hour + 1) % 12
 
         if m == 0:
-            letters += HOURS[h] + UHR
+            letters += HOURS[h]
         elif m == 5:
             letters += FUF_MIN + AB + HOURS[h]
         elif m == 10:
@@ -301,7 +301,7 @@ class Clock(BasePlugin):
         elif m == 55:
             letters += FUF_MIN + VOR + HOURS[h_next]
         elif m == 60:
-            letters += HOURS[h_next] + UHR
+            letters += HOURS[h_next]
 
         return letters
 
