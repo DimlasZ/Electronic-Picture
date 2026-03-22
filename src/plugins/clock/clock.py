@@ -148,7 +148,7 @@ class Clock(BasePlugin):
         dim = min(w,h)
 
         font_size = dim*0.05
-        fnt = get_font("Napoli", font_size)
+        fnt = get_font("Jost", font_size)
 
         canvas = Image.new("RGBA", dimensions, (0, 0, 0, 0))
         image_draw = ImageDraw.Draw(canvas)
@@ -198,7 +198,7 @@ class Clock(BasePlugin):
         dim = min(w,h)
 
         font_size = dim*0.05
-        fnt = get_font("Napoli", font_size)
+        fnt = get_font("Jost", font_size)
 
         canvas = Image.new("RGBA", dimensions, (0, 0, 0, 0))
         image_draw = ImageDraw.Draw(canvas)
