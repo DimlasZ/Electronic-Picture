@@ -146,7 +146,7 @@
       id: 'chartIcons',
       afterDatasetsDraw(chart) {
         const { ctx, chartArea: { bottom }, scales: { x } } = chart;
-        const iconSize = 22;
+        const iconSize = 32;
 
         ctx.save();
         chart.getDatasetMeta(0).data.forEach((point, i) => {
