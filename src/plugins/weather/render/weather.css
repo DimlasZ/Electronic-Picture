@@ -176,6 +176,7 @@
   width: 100%;
   gap: 1.5dvw;
   overflow: hidden;
+  max-height: 12dvh;
 }
 
 .forecast-day {
