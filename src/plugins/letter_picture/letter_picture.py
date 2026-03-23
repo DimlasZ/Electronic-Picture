@@ -38,6 +38,7 @@ class LetterPicture(BasePlugin):
             "layout": settings.get("layout", "image-left"),
             "font_scale": FONT_SIZES.get(settings.get("fontSize", "normal"), 1.0),
             "image_size": int(settings.get("imageSize", 45)),
+            "text_align": settings.get("textAlign", "left"),
             "plugin_settings": settings,
         }
 

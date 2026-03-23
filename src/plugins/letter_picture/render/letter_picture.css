@@ -54,6 +54,7 @@
     margin-bottom: 0.5rem;
     line-height: 1.2;
     flex-shrink: 0;
+    text-align: var(--text-align);
 }
 
 .lp-message {
@@ -62,4 +63,5 @@
     line-height: 1.6;
     overflow: hidden;
     word-break: break-word;
+    text-align: var(--text-align);
 }

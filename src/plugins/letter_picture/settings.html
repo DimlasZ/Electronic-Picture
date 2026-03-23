@@ -41,6 +41,15 @@
             <option value="x-large">Extra Large</option>
         </select>
     </div>
+
+    <div class="form-group nowrap">
+        <label for="textAlign" class="form-label">Text Align:</label>
+        <select id="textAlign" name="textAlign" class="form-input">
+            <option value="left">Left</option>
+            <option value="center">Center</option>
+            <option value="right">Right</option>
+        </select>
+    </div>
 </div>
 
 <div class="form-group">
@@ -94,6 +103,7 @@
         let layout = "image-left";
         let imageSize = "45";
         let fontSize = "normal";
+        let textAlign = "left";
 
         if (loadPluginSettings) {
             document.getElementById("title").value = pluginSettings.title || "";
@@ -102,6 +112,7 @@
             layout = pluginSettings.layout || "image-left";
             imageSize = pluginSettings.imageSize || "45";
             fontSize = pluginSettings.fontSize || "normal";
+            textAlign = pluginSettings.textAlign || "left";
 
             // Show existing image file name and create hidden input to preserve it
             const existingPath = pluginSettings.imageFile;
@@ -129,5 +140,6 @@
         document.getElementById("layout").value = layout;
         document.getElementById("imageSize").value = imageSize;
         document.getElementById("fontSize").value = fontSize;
+        document.getElementById("textAlign").value = textAlign;
     });
 </script>
