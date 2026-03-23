@@ -212,8 +212,8 @@
   min-height: 0;
   object-fit: contain;
   padding: 0 1vw;
-  max-width: 10dvw;
-  max-height: 10dvh;
+  max-width: 15dvw;
+  max-height: 7dvh;
 }
 
 .forecast-temps {
