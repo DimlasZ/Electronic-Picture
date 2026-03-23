@@ -1,0 +1,133 @@
+<div class="form-group">
+    <div class="form-group nowrap">
+        <label for="title" class="form-label">Title</label>
+        <input type="text" id="title" name="title" placeholder="Optional title..." class="form-input">
+    </div>
+
+    <div class="form-group">
+        <label for="message" class="form-label">Message</label>
+        <textarea id="message" name="message" placeholder="Write your letter here..." rows="6"
+            style="width:100%; padding:0.5rem; border:1px solid #ccc; border-radius:4px; resize:vertical; font-family:inherit; font-size:0.9rem; box-sizing:border-box;"></textarea>
+    </div>
+
+    <div class="form-group nowrap">
+        <label for="layout" class="form-label">Layout:</label>
+        <select id="layout" name="layout" class="form-input">
+            <option value="image-left">Image Left</option>
+            <option value="image-right">Image Right</option>
+            <option value="image-top">Image Top</option>
+            <option value="image-bottom">Image Bottom</option>
+        </select>
+    </div>
+
+    <div class="form-group nowrap">
+        <label for="imageSize" class="form-label">Image Size:</label>
+        <select id="imageSize" name="imageSize" class="form-input">
+            <option value="30">30%</option>
+            <option value="40">40%</option>
+            <option value="45" selected>45%</option>
+            <option value="50">50%</option>
+            <option value="60">60%</option>
+        </select>
+    </div>
+
+    <div class="form-group nowrap">
+        <label for="fontSize" class="form-label">Font Size:</label>
+        <select id="fontSize" name="fontSize" class="form-input">
+            <option value="x-small">Extra Small</option>
+            <option value="small">Small</option>
+            <option value="normal">Normal</option>
+            <option value="large">Large</option>
+            <option value="x-large">Extra Large</option>
+        </select>
+    </div>
+</div>
+
+<div class="form-group">
+    <label for="imageUpload" class="form-input file-upload-label">Choose Picture</label>
+    <input type="file" clear-on-submit id="imageUpload" name="imageFile" accept="image/*"
+           class="file-upload-input" onchange="onImageSelected()">
+</div>
+
+<div class="form-group">
+    <div id="fileNameDisplay" class="file-name-list"></div>
+</div>
+
+<!-- Hidden input to carry over existing file path on save -->
+<div id="hiddenImageInput"></div>
+
+<script>
+    function onImageSelected() {
+        const input = document.getElementById("imageUpload");
+        const display = document.getElementById("fileNameDisplay");
+        const hiddenContainer = document.getElementById("hiddenImageInput");
+
+        // Clear existing hidden input so old path isn't sent alongside new file
+        hiddenContainer.innerHTML = "";
+        display.innerHTML = "";
+
+        const file = input.files[0];
+        if (!file) return;
+
+        if (!uploadedFiles["imageFile"]) {
+            uploadedFiles["imageFile"] = [];
+        }
+        uploadedFiles["imageFile"] = [file];
+
+        const el = document.createElement("div");
+        el.className = "file-name";
+        el.setAttribute("delete-on-submit", "");
+        el.innerHTML = `<span id="fileNameText">${file.name}</span>
+                        <button type="button" class="remove-btn" onclick="removeImage()">X</button>`;
+        display.appendChild(el);
+
+        input.value = "";
+    }
+
+    function removeImage() {
+        uploadedFiles["imageFile"] = [];
+        document.getElementById("fileNameDisplay").innerHTML = "";
+        document.getElementById("hiddenImageInput").innerHTML = "";
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        let layout = "image-left";
+        let imageSize = "45";
+        let fontSize = "normal";
+
+        if (loadPluginSettings) {
+            document.getElementById("title").value = pluginSettings.title || "";
+            document.getElementById("message").value = pluginSettings.message || "";
+
+            layout = pluginSettings.layout || "image-left";
+            imageSize = pluginSettings.imageSize || "45";
+            fontSize = pluginSettings.fontSize || "normal";
+
+            // Show existing image file name and create hidden input to preserve it
+            const existingPath = pluginSettings.imageFile;
+            if (existingPath) {
+                const fileName = existingPath.split("/").pop().split("\\").pop();
+                const display = document.getElementById("fileNameDisplay");
+                const hiddenContainer = document.getElementById("hiddenImageInput");
+
+                const el = document.createElement("div");
+                el.className = "file-name";
+                el.setAttribute("delete-on-submit", "");
+                el.innerHTML = `<span id="fileNameText">${fileName}</span>
+                                <button type="button" class="remove-btn" onclick="removeImage()">X</button>`;
+                display.appendChild(el);
+
+                const hidden = document.createElement("input");
+                hidden.type = "hidden";
+                hidden.name = "imageFile";
+                hidden.value = existingPath;
+                hidden.setAttribute("delete-on-submit", "");
+                hiddenContainer.appendChild(hidden);
+            }
+        }
+
+        document.getElementById("layout").value = layout;
+        document.getElementById("imageSize").value = imageSize;
+        document.getElementById("fontSize").value = fontSize;
+    });
+</script>

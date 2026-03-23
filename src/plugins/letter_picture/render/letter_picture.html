@@ -1,0 +1,21 @@
+{% extends "plugin.html" %}
+
+{% block content %}
+<div class="letter-picture layout-{{ layout }}"
+     style="--font-scale: {{ font_scale }}; --image-size: {{ image_size }}%;">
+
+    {% if image_data %}
+    <div class="image-panel">
+        <img src="{{ image_data }}" alt="Picture">
+    </div>
+    {% endif %}
+
+    <div class="text-panel">
+        {% if title %}
+        <div class="lp-title">{{ title }}</div>
+        {% endif %}
+        <div class="lp-message">{{ message | replace('\n', '<br>') | safe }}</div>
+    </div>
+
+</div>
+{% endblock %}

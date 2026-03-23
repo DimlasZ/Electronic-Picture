@@ -42,6 +42,14 @@ def get_current_image():
     return response
 
 
+@main_bp.route('/preview')
+def preview_page():
+    return '''<html><head><meta http-equiv="refresh" content="3">
+    <style>body{margin:0;background:#000;display:flex;justify-content:center;align-items:center;height:100vh;}
+    img{max-width:100%;}</style></head>
+    <body><img src="/api/current_image" /></body></html>'''
+
+
 @main_bp.route('/api/plugin_order', methods=['POST'])
 def save_plugin_order():
     """Save the custom plugin order."""
