@@ -58,6 +58,7 @@
 }
 
 .today-container {
+  flex: 0 0 150px;
   display: flex;
   flex-direction: row;
   justify-content: center;
@@ -168,7 +169,7 @@
 
 /* Forecast Row */
 .forecast {
-  flex: 0 0 60px;
+  flex: 0 0 80px;
   display: flex;
   flex-direction: row;
   flex-wrap: nowrap;
@@ -242,7 +243,7 @@
 }
 
 .chart-container {
-  flex: 0 0 115px;
+  flex: 0 0 100px;
   width: 100%;
 }
 
