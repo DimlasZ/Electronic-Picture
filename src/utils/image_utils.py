@@ -114,11 +114,6 @@ def _find_chromium_binary():
         if path:
             logger.debug(f"Found browser binary: {candidate} at {path}")
             return candidate
-    # Check for Brave on Windows
-    brave_path = r"C:\Program Files\BraveSoftware\Brave-Browser\Application\brave.exe"
-    if os.path.exists(brave_path):
-        logger.debug(f"Found Brave browser at {brave_path}")
-        return brave_path
     return None
 
 
