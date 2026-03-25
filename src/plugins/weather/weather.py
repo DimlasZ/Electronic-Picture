@@ -504,10 +504,51 @@ class Weather(BasePlugin):
         })
 
         data_points.append({
+            "label": "Humidity",
+            "measurement": weather.get('current', {}).get("humidity"),
+            "unit": '%',
+            "icon": self.get_plugin_dir('icons/humidity.png')
+        })
+
+        data_points.append({
+            "label": "Pressure",
+            "measurement": weather.get('current', {}).get("pressure"),
+            "unit": 'hPa',
+            "icon": self.get_plugin_dir('icons/pressure.png')
+        })
+
+        data_points.append({
             "label": "UV Index",
             "measurement": weather.get('current', {}).get("uvi"),
             "unit": '',
             "icon": self.get_plugin_dir('icons/uvi.png')
+        })
+
+        visibility = weather.get('current', {}).get("visibility")
+        if units == "imperial":
+            # convert from m to mi
+            visibility /= 1609.
+            at_max_visibility = visibility >= 6.2
+        else:
+            # convert from m to km
+            visibility /= 1000.
+            at_max_visibility = visibility >= 10
+        visibility_str = f"{visibility:.1f}"
+        if at_max_visibility:
+            visibility_str = u"\u2265" + visibility_str
+        data_points.append({
+            "label": "Visibility",
+            "measurement": visibility_str,
+            "unit": UNITS[units]["distance"],
+            "icon": self.get_plugin_dir('icons/visibility.png')
+        })
+
+        aqi = air_quality.get('list', [])[0].get("main", {}).get("aqi")
+        data_points.append({
+            "label": "Air Quality",
+            "measurement": aqi,
+            "unit": ["Good", "Fair", "Moderate", "Poor", "Very Poor"][int(aqi)-1],
+            "icon": self.get_plugin_dir('icons/aqi.png')
         })
 
         return data_points
@@ -557,6 +598,40 @@ class Weather(BasePlugin):
             "icon": self.get_plugin_dir('icons/wind.png'), "arrow": wind_arrow
         })
 
+        # Humidity
+        current_humidity = "N/A"
+        humidity_hourly_times = hourly_data.get('time', [])
+        humidity_values = hourly_data.get('relative_humidity_2m', [])
+        for i, time_str in enumerate(humidity_hourly_times):
+            try:
+                if datetime.fromisoformat(time_str).astimezone(tz).hour == current_time.hour:
+                    current_humidity = int(humidity_values[i])
+                    break
+            except ValueError:
+                logger.warning(f"Could not parse time string {time_str} for humidity.")
+                continue
+        data_points.append({
+            "label": "Humidity", "measurement": current_humidity, "unit": '%',
+            "icon": self.get_plugin_dir('icons/humidity.png')
+        })
+
+        # Pressure
+        current_pressure = "N/A"
+        pressure_hourly_times = hourly_data.get('time', [])
+        pressure_values = hourly_data.get('surface_pressure', [])
+        for i, time_str in enumerate(pressure_hourly_times):
+            try:
+                if datetime.fromisoformat(time_str).astimezone(tz).hour == current_time.hour:
+                    current_pressure = int(pressure_values[i])
+                    break
+            except ValueError:
+                logger.warning(f"Could not parse time string {time_str} for pressure.")
+                continue
+        data_points.append({
+            "label": "Pressure", "measurement": current_pressure, "unit": 'hPa',
+            "icon": self.get_plugin_dir('icons/pressure.png')
+        })
+
         # UV Index
         uv_index_hourly_times = aqi_data.get('hourly', {}).get('time', [])
         uv_index_values = aqi_data.get('hourly', {}).get('uv_index', [])
@@ -572,6 +647,55 @@ class Weather(BasePlugin):
         data_points.append({
             "label": "UV Index", "measurement": current_uv_index, "unit": '',
             "icon": self.get_plugin_dir('icons/uvi.png')
+        })
+
+        # Visibility
+        current_visibility = "N/A"
+        visibility_hourly_times = hourly_data.get('time', [])
+        visibility_values = hourly_data.get('visibility', [])
+        if units == "imperial":
+            visibility_conversion = 1/5280.     # ft to mi
+            visibility_max = 6.2                # mi
+        else:
+            visibility_conversion = 0.001       # m to km
+            visibility_max = 10.                # km
+        for i, time_str in enumerate(visibility_hourly_times):
+            try:
+                if datetime.fromisoformat(time_str).astimezone(tz).hour == current_time.hour:
+                    current_visibility = visibility_values[i]*visibility_conversion
+                    at_max_visibility = current_visibility >= visibility_max
+                    break
+            except ValueError:
+                logger.warning(f"Could not parse time string {time_str} for visibility.")
+                continue
+        visibility_str = f"{current_visibility:.1f}"
+        if at_max_visibility:
+            visibility_str = u"\u2265" + visibility_str
+        data_points.append({
+            "label": "Visibility", 
+            "measurement": visibility_str, 
+            "unit": UNITS[units]["distance"],
+            "icon": self.get_plugin_dir('icons/visibility.png')
+        })
+
+        # Air Quality
+        aqi_hourly_times = aqi_data.get('hourly', {}).get('time', [])
+        aqi_values = aqi_data.get('hourly', {}).get('european_aqi', [])
+        current_aqi = "N/A"
+        for i, time_str in enumerate(aqi_hourly_times):
+            try:
+                if datetime.fromisoformat(time_str).astimezone(tz).hour == current_time.hour:
+                    current_aqi = round(aqi_values[i], 1)
+                    break
+            except ValueError:
+                logger.warning(f"Could not parse time string {time_str} for AQI.")
+                continue
+        scale = ""
+        if current_aqi and current_aqi != "N/A":
+            scale = ["Good","Fair","Moderate","Poor","Very Poor","Ext Poor"][min(current_aqi//20,5)]
+        data_points.append({
+            "label": "Air Quality", "measurement": current_aqi,
+            "unit": scale, "icon": self.get_plugin_dir('icons/aqi.png')
         })
 
         return data_points
