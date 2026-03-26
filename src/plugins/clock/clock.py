@@ -13,25 +13,7 @@ logger = logging.getLogger(__name__)
 
 CLOCK_FACES = [
     {
-        "name": "Gradient Clock",
-        "primary_color": "#db3246",
-        "secondary_color": "#000000",
-        "icon": "faces/gradient.png"
-    },
-    {
-        "name": "Digital Clock",
-        "primary_color": "#ffffff",
-        "secondary_color": "#000000",
-        "icon": "faces/digital.png"
-    },
-    {
-        "name": "Divided Clock",
-        "primary_color": "#20b7ae",
-        "secondary_color": "#ffffff",
-        "icon": "faces/divided.png"
-    },
-    {
-        "name": "Word Clock",
+        "name": "Word Clock (Schweizerdeutsch)",
         "primary_color": "#000000",
         "secondary_color": "#ffffff",
         "icon": "faces/word.png"
@@ -39,7 +21,7 @@ CLOCK_FACES = [
 ]
 
 DEFAULT_TIMEZONE = "US/Eastern"
-DEFAULT_CLOCK_FACE = "Gradient Clock"
+DEFAULT_CLOCK_FACE = "Word Clock (Schweizerdeutsch)"
 
 class Clock(BasePlugin):
     def generate_settings_template(self):
@@ -64,14 +46,8 @@ class Clock(BasePlugin):
 
         img = None
         try:
-            if clock_face == "Gradient Clock":
-                img = self.draw_conic_clock(dimensions, current_time, primary_color, secondary_color)
-            elif clock_face == "Digital Clock":
-                img = self.draw_digital_clock(dimensions, current_time, primary_color, secondary_color)
-            elif clock_face == "Divided Clock":
-                img = self.draw_divided_clock(dimensions, current_time, primary_color, secondary_color)
-            elif clock_face == "Word Clock":
-                img = self.draw_word_clock(dimensions, current_time, primary_color, secondary_color)
+            if clock_face == "Word Clock (Schweizerdeutsch)":
+                img = self.draw_word_clock_ch(dimensions, current_time, primary_color, secondary_color)
         except Exception as e:
             logger.error(f"Failed to draw clock image: {str(e)}")
             raise RuntimeError("Failed to display clock.")
@@ -172,7 +148,7 @@ class Clock(BasePlugin):
         dim = min(w,h)
 
         font_size = dim*0.05
-        fnt = get_font("Napoli", font_size)
+        fnt = get_font("Jost", font_size)
 
         canvas = Image.new("RGBA", dimensions, (0, 0, 0, 0))
         image_draw = ImageDraw.Draw(canvas)
@@ -213,6 +189,121 @@ class Clock(BasePlugin):
 
         combined = Image.alpha_composite(bg, canvas)
         return combined
+
+    def draw_word_clock_ch(self, dimensions, time, primary_color=(0,0,0), secondary_color=(255,255,255)):
+        w,h = dimensions
+
+        bg = Image.new("RGBA", dimensions, primary_color+(255,))
+
+        dim = min(w,h)
+
+        font_size = dim*0.05
+        fnt = get_font("Jost", font_size)
+
+        canvas = Image.new("RGBA", dimensions, (0, 0, 0, 0))
+        image_draw = ImageDraw.Draw(canvas)
+
+        border = [40, 40]
+        if w > h:
+            border[0] += (w-h)/2
+        elif h > w:
+            border[1] += (h-w)/2
+
+        letter_positions = Clock.translate_word_grid_positions_ch(time.hour % 12, time.minute)
+
+        letter_grid = [
+            ['E','S','K','I','S','C','H','A','F','Ü','F'],
+            ['V','I','E','R','T','U','B','F','Z','Ä','Ä'],
+            ['Z','W','Ä','N','Z','G','S','I','V','O','R'],
+            ['A','B','O','H','A','U','B','I','E','P','M'],
+            ['E','I','S','Z','W','Ö','I','S','D','R','Ü'],
+            ['V','I','E','R','I','F','Ü','F','I','Q','T'],
+            ['S','Ä','C','H','S','I','S','I','B','N','I'],
+            ['A','C','H','T','I','N','Ü','N','I','E','L'],
+            ['Z','Ä','N','I','E','R','B','E','U','F','I'],
+            ['Z','W','Ö','U','F','I','A','M','U','H','R'],
+        ]
+
+        canvas_size = min(w,h) - min(border)*2
+        for y, row in enumerate(letter_grid):
+            for x, letter in enumerate(row):
+                x_pos = x*(canvas_size/(len(row)-1)) + border[0]
+                y_pos = y*(canvas_size/(len(letter_grid)-1)) + border[1]
+
+                fill=secondary_color+(50,)
+                if [y,x] in letter_positions:
+                    fill=secondary_color+(255,)
+                    image_draw.text((x_pos+2, y_pos+2), letter, anchor="mm", fill=secondary_color+(80,), font=fnt)
+
+                image_draw.text((x_pos, y_pos), letter, anchor="mm", fill=fill, font=fnt)
+
+        combined = Image.alpha_composite(bg, canvas)
+        return combined
+
+    @staticmethod
+    def translate_word_grid_positions_ch(hour, minute):
+        letters = [
+            [0,0],[0,1],                          # ES
+            [0,3],[0,4],[0,5],[0,6]               # ISCH
+        ]
+
+        m = round(minute / 5) * 5
+
+        FUF_MIN = [[0,8],[0,9],[0,10]]
+        ZAA     = [[1,8],[1,9],[1,10]]
+        VIERTU  = [[1,0],[1,1],[1,2],[1,3],[1,4],[1,5]]
+        ZWANZG  = [[2,0],[2,1],[2,2],[2,3],[2,4],[2,5]]
+        HAUBI   = [[3,3],[3,4],[3,5],[3,6],[3,7]]
+        AB      = [[3,0],[3,1]]
+        VOR     = [[2,8],[2,9],[2,10]]
+        UHR     = [[9,8],[9,9],[9,10]]
+
+        HOURS = [
+            [[9,0],[9,1],[9,2],[9,3],[9,4],[9,5]],  # 0/12 ZWÖUFI
+            [[4,0],[4,1],[4,2]],                     # 1  EIS
+            [[4,3],[4,4],[4,5],[4,6]],               # 2  ZWÖI
+            [[4,8],[4,9],[4,10]],                    # 3  DRÜ
+            [[5,0],[5,1],[5,2],[5,3],[5,4]],         # 4  VIERI
+            [[5,5],[5,6],[5,7],[5,8]],               # 5  FÜFI
+            [[6,0],[6,1],[6,2],[6,3],[6,4],[6,5]],   # 6  SÄCHSI
+            [[6,6],[6,7],[6,8],[6,9],[6,10]],        # 7  SIBNI
+            [[7,0],[7,1],[7,2],[7,3],[7,4]],         # 8  ACHTI
+            [[7,5],[7,6],[7,7],[7,8]],               # 9  NÜNI
+            [[8,0],[8,1],[8,2],[8,3]],               # 10 ZÄNI
+            [[8,7],[8,8],[8,9],[8,10]],              # 11 EUFI
+        ]
+
+        h = hour % 12
+        h_next = (hour + 1) % 12
+
+        if m == 0:
+            letters += HOURS[h]
+        elif m == 5:
+            letters += FUF_MIN + AB + HOURS[h]
+        elif m == 10:
+            letters += ZAA + AB + HOURS[h]
+        elif m == 15:
+            letters += VIERTU + AB + HOURS[h]
+        elif m == 20:
+            letters += ZWANZG + AB + HOURS[h]
+        elif m == 25:
+            letters += FUF_MIN + VOR + HAUBI + HOURS[h_next]
+        elif m == 30:
+            letters += HAUBI + HOURS[h_next]
+        elif m == 35:
+            letters += FUF_MIN + AB + HAUBI + HOURS[h_next]
+        elif m == 40:
+            letters += ZWANZG + VOR + HOURS[h_next]
+        elif m == 45:
+            letters += VIERTU + VOR + HOURS[h_next]
+        elif m == 50:
+            letters += ZAA + VOR + HOURS[h_next]
+        elif m == 55:
+            letters += FUF_MIN + VOR + HOURS[h_next]
+        elif m == 60:
+            letters += HOURS[h_next]
+
+        return letters
 
     @staticmethod
     def format_time(hour, minute, zero_pad=False):
