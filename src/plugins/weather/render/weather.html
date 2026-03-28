@@ -146,7 +146,7 @@
       id: 'chartIcons',
       afterDatasetsDraw(chart) {
         const { ctx, chartArea: { bottom }, scales: { x } } = chart;
-        const iconSize = 22;
+        const iconSize = 30;
 
         ctx.save();
         chart.getDatasetMeta(0).data.forEach((point, i) => {
@@ -205,7 +205,7 @@
         layout: {
 		  padding: {
 		    top: {% if plugin_settings.displayGraphIcons == "true" %}3{% else %}0{% endif %},
-		    bottom: {% if plugin_settings.displayGraphIcons == "true" %}11{% else %}0{% endif %}
+		    bottom: {% if plugin_settings.displayGraphIcons == "true" %}16{% else %}0{% endif %}
 		  }
         },
 		animation: {
