@@ -19,16 +19,20 @@ def _to_celsius(temp, units):
 
 
 def _get_window_end(now):
-    """Before 14:00 → check until 16:00, otherwise until 22:00."""
+    """Before 14:00 → check until 16:00, 14:00-21:59 → check until 22:00, 22:00+ → no recommendation."""
     if now.hour < 14:
         return now.replace(hour=16, minute=0, second=0, microsecond=0)
-    return now.replace(hour=22, minute=0, second=0, microsecond=0)
+    if now.hour < 22:
+        return now.replace(hour=22, minute=0, second=0, microsecond=0)
+    return None
 
 
 def extract_open_meteo_conditions(hourly_data, aqi_data, units, tz, now):
     """Extract worst-case conditions from Open-Meteo hourly forecast window."""
     window_start = now + timedelta(minutes=15)
     window_end = _get_window_end(now)
+    if window_end is None:
+        return None
 
     times = hourly_data.get('time', [])
     feels_like_values = hourly_data.get('apparent_temperature', [])
@@ -92,6 +96,8 @@ def extract_owm_conditions(hourly_data, units, tz, now):
     """Extract worst-case conditions from OpenWeatherMap hourly forecast window."""
     window_start = now + timedelta(minutes=15)
     window_end = _get_window_end(now)
+    if window_end is None:
+        return None
 
     min_feels_like_c = None
     is_rain = False
@@ -140,7 +146,10 @@ def get_clothing_suggestions(conditions):
     """Returns clothing suggestions based on forecast conditions.
 
     Each item: {"label": str, "icon": str (filename only, e.g. 'jacket.png')}
+    Returns empty list if conditions is None (e.g. after 22:00).
     """
+    if conditions is None:
+        return []
     feels_like_c = conditions["feels_like_c"]
     is_rain = conditions["is_rain"]
     is_heavy_rain = conditions["is_heavy_rain"]
