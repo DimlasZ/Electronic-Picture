@@ -156,7 +156,7 @@
           const img = new Image();
           img.src = weatherIconsPaths[i];
           const xPos = point.x - (iconSize / 2);
-          const yPos = bottom + 25;
+          const yPos = bottom + 5;
       
           if (img.complete) {
             ctx.drawImage(img, xPos, yPos, iconSize, iconSize);
@@ -205,7 +205,7 @@
         layout: {
 		  padding: {
 		    top: {% if plugin_settings.displayGraphIcons == "true" %}3{% else %}0{% endif %},
-		    bottom: {% if plugin_settings.displayGraphIcons == "true" %}25{% else %}0{% endif %}
+		    bottom: {% if plugin_settings.displayGraphIcons == "true" %}52{% else %}0{% endif %}
 		  }
         },
 		animation: {
