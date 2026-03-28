@@ -1,13 +1,10 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 import logging
 
 logger = logging.getLogger(__name__)
 
 OPEN_METEO_RAIN_CODES = {51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82}
-OPEN_METEO_HEAVY_RAIN_CODES = {53, 55, 63, 65, 81, 82}
 OPEN_METEO_SNOW_CODES = {71, 73, 75, 77, 85, 86}
-
-OWM_HEAVY_RAIN_IDS = {302, 312, 502, 503, 504, 522, 531}
 
 
 def _to_celsius(temp, units):
@@ -37,6 +34,7 @@ def extract_open_meteo_conditions(hourly_data, aqi_data, units, tz, now):
     times = hourly_data.get('time', [])
     feels_like_values = hourly_data.get('apparent_temperature', [])
     weather_codes = hourly_data.get('weather_code', [])
+    wind_values = hourly_data.get('windspeed_10m', [])
 
     uv_times = aqi_data.get('hourly', {}).get('time', [])
     uv_values = aqi_data.get('hourly', {}).get('uv_index', [])
@@ -49,8 +47,8 @@ def extract_open_meteo_conditions(hourly_data, aqi_data, units, tz, now):
             pass
 
     min_feels_like_c = None
+    max_wind = 0.0
     is_rain = False
-    is_heavy_rain = False
     is_snow = False
     max_uv = 0.0
 
@@ -68,12 +66,17 @@ def extract_open_meteo_conditions(hourly_data, aqi_data, units, tz, now):
             if min_feels_like_c is None or feels_c < min_feels_like_c:
                 min_feels_like_c = feels_c
 
+        if i < len(wind_values) and wind_values[i] is not None:
+            wind = float(wind_values[i])
+            if units == "imperial":
+                wind = wind * 0.44704  # mph to m/s
+            if wind > max_wind:
+                max_wind = wind
+
         if i < len(weather_codes):
             code = int(weather_codes[i])
             if code in OPEN_METEO_RAIN_CODES:
                 is_rain = True
-            if code in OPEN_METEO_HEAVY_RAIN_CODES:
-                is_heavy_rain = True
             if code in OPEN_METEO_SNOW_CODES:
                 is_snow = True
 
@@ -84,58 +87,8 @@ def extract_open_meteo_conditions(hourly_data, aqi_data, units, tz, now):
 
     return {
         "feels_like_c": min_feels_like_c if min_feels_like_c is not None else 15.0,
+        "max_wind_ms": max_wind,
         "is_rain": is_rain,
-        "is_heavy_rain": is_heavy_rain,
-        "is_snow": is_snow,
-        "uv_index": max_uv,
-        "is_day": max_uv > 0,
-    }
-
-
-def extract_owm_conditions(hourly_data, units, tz, now):
-    """Extract worst-case conditions from OpenWeatherMap hourly forecast window."""
-    window_start = now + timedelta(minutes=15)
-    window_end = _get_window_end(now)
-    if window_end is None:
-        return None
-
-    min_feels_like_c = None
-    is_rain = False
-    is_heavy_rain = False
-    is_snow = False
-    max_uv = 0.0
-
-    for hour in hourly_data:
-        dt_epoch = hour.get('dt')
-        if not dt_epoch:
-            continue
-        dt = datetime.fromtimestamp(dt_epoch, tz=timezone.utc).astimezone(tz)
-
-        if dt < window_start or dt > window_end:
-            continue
-
-        feels_like = hour.get("feels_like")
-        if feels_like is not None:
-            feels_c = _to_celsius(feels_like, units)
-            if min_feels_like_c is None or feels_c < min_feels_like_c:
-                min_feels_like_c = feels_c
-
-        weather_id = hour.get("weather", [{}])[0].get("id", 0)
-        if 200 <= weather_id < 600:
-            is_rain = True
-        if weather_id in OWM_HEAVY_RAIN_IDS:
-            is_heavy_rain = True
-        if 600 <= weather_id < 700:
-            is_snow = True
-
-        uvi = hour.get("uvi", 0.0) or 0.0
-        if uvi > max_uv:
-            max_uv = uvi
-
-    return {
-        "feels_like_c": min_feels_like_c if min_feels_like_c is not None else 15.0,
-        "is_rain": is_rain,
-        "is_heavy_rain": is_heavy_rain,
         "is_snow": is_snow,
         "uv_index": max_uv,
         "is_day": max_uv > 0,
@@ -150,39 +103,43 @@ def get_clothing_suggestions(conditions):
     """
     if conditions is None:
         return []
+
     feels_like_c = conditions["feels_like_c"]
+    max_wind_ms = conditions["max_wind_ms"]
     is_rain = conditions["is_rain"]
-    is_heavy_rain = conditions["is_heavy_rain"]
     is_snow = conditions["is_snow"]
     uv_index = conditions["uv_index"]
     is_day = conditions["is_day"]
 
     suggestions = []
 
+    # Primary temperature layer
     if is_snow or feels_like_c <= -5:
         suggestions.append({"label": "Snow Jacket", "icon": "winter-clothes.png"})
     elif feels_like_c < 10:
         suggestions.append({"label": "Jacket", "icon": "jacket.png"})
     elif feels_like_c < 20:
-        suggestions.append({"label": "Hoodie", "icon": "hoodie.png"})
+        suggestions.append({"label": "Pullover", "icon": "hoodie.png"})
     else:
         suggestions.append({"label": "T-Shirt", "icon": "tshirt.png"})
 
-    if feels_like_c <= 5:
+    # Scarf: below 2°C, or below 8°C and windy
+    if feels_like_c < 2 or (feels_like_c < 8 and max_wind_ms > 5):
         suggestions.append({"label": "Scarf", "icon": "scarf.png"})
+
     if feels_like_c <= 0:
         suggestions.append({"label": "Gloves", "icon": "gloves.png"})
 
-    if is_heavy_rain:
-        suggestions.append({"label": "Umbrella", "icon": "umbrella.png"})
+    # Umbrella for any rain
     if is_rain:
-        suggestions.append({"label": "Raincoat", "icon": "raincoat.png"})
+        suggestions.append({"label": "Umbrella", "icon": "umbrella.png"})
 
+    # Sun protection
     try:
         uv = float(uv_index)
         if is_day and uv >= 6:
             suggestions.append({"label": "Suncream", "icon": "suncream.png"})
-        if is_day and uv >= 3:
+        if is_day and uv >= 3 and feels_like_c > 10:
             suggestions.append({"label": "Sunglasses", "icon": "sunglasses.png"})
     except (ValueError, TypeError):
         pass

@@ -1,5 +1,5 @@
 from plugins.base_plugin.base_plugin import BasePlugin
-from plugins.weather.clothing_advisor import extract_open_meteo_conditions, extract_owm_conditions, get_clothing_suggestions
+from plugins.weather.clothing_advisor import extract_open_meteo_conditions, get_clothing_suggestions
 from PIL import Image
 import os
 import requests
@@ -52,7 +52,7 @@ UNITS = {
 WEATHER_URL = "https://api.openweathermap.org/data/3.0/onecall?lat={lat}&lon={long}&units={units}&exclude=minutely&appid={api_key}"
 GEOCODING_URL = "http://api.openweathermap.org/geo/1.0/reverse?lat={lat}&lon={long}&limit=1&appid={api_key}"
 
-OPEN_METEO_FORECAST_URL = "https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={long}&hourly=weather_code,temperature_2m,apparent_temperature,precipitation,precipitation_probability&daily=weathercode,temperature_2m_max,temperature_2m_min,sunrise,sunset&current=temperature,windspeed,winddirection,is_day,precipitation,weather_code,apparent_temperature&timezone=auto&models=best_match&forecast_days={forecast_days}"
+OPEN_METEO_FORECAST_URL = "https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={long}&hourly=weather_code,temperature_2m,apparent_temperature,windspeed_10m,precipitation,precipitation_probability&daily=weathercode,temperature_2m_max,temperature_2m_min,sunrise,sunset&current=temperature,windspeed,winddirection,is_day,precipitation,weather_code,apparent_temperature&timezone=auto&models=best_match&forecast_days={forecast_days}"
 OPEN_METEO_AIR_QUALITY_URL = "https://air-quality-api.open-meteo.com/v1/air-quality?latitude={lat}&longitude={long}&hourly=european_aqi,uv_index,uv_index_clear_sky&timezone=auto"
 OPEN_METEO_UNIT_PARAMS = {
     "standard": "temperature_unit=celsius&wind_speed_unit=ms&precipitation_unit=mm",  # temperature is converted to Kelvin later
@@ -503,10 +503,7 @@ class Weather(BasePlugin):
             "arrow": wind_arrow
         })
 
-        now = datetime.now(tz)
-        conditions = extract_owm_conditions(weather.get('hourly', []), units, tz, now)
-        for s in get_clothing_suggestions(conditions):
-            data_points.append({"label": s["label"], "measurement": "", "unit": "", "icon": self.get_plugin_dir(f'icons/{s["icon"]}')})
+
 
         return data_points
 
@@ -552,6 +549,23 @@ class Weather(BasePlugin):
         data_points.append({
             "label": "Wind", "measurement": wind_speed, "unit": wind_unit,
             "icon": self.get_plugin_dir('icons/wind.png'), "arrow": wind_arrow
+        })
+
+        # UV Index
+        uv_index_hourly_times = aqi_data.get('hourly', {}).get('time', [])
+        uv_index_values = aqi_data.get('hourly', {}).get('uv_index', [])
+        current_uv_index = "N/A"
+        for i, time_str in enumerate(uv_index_hourly_times):
+            try:
+                if datetime.fromisoformat(time_str).astimezone(tz).hour == current_time.hour:
+                    current_uv_index = round(uv_index_values[i], 1)
+                    break
+            except ValueError:
+                logger.warning(f"Could not parse time string {time_str} for UV Index.")
+                continue
+        data_points.append({
+            "label": "UV Index", "measurement": current_uv_index, "unit": "",
+            "icon": self.get_plugin_dir('icons/uvi.png')
         })
 
         hourly_data = weather_data.get('hourly', {})
