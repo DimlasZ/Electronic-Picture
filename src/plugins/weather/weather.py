@@ -447,7 +447,7 @@ class Weather(BasePlugin):
         sliced_rain = rain[start_index:]
         sliced_codes = codes[start_index:]
 
-        for i in range(min(24, len(sliced_times))):
+        for i in range(min(14, len(sliced_times))):
             dt = datetime.fromisoformat(sliced_times[i]).astimezone(tz)
             sunrise, sunset = sun_map.get(dt.date(), (None, None))
             is_day = 0

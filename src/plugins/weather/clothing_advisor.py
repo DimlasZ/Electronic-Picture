@@ -3,7 +3,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-OPEN_METEO_RAIN_CODES = {51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82}
 OPEN_METEO_SNOW_CODES = {71, 73, 75, 77, 85, 86}
 
 
@@ -35,6 +34,8 @@ def extract_open_meteo_conditions(hourly_data, aqi_data, units, tz, now):
     feels_like_values = hourly_data.get('apparent_temperature', [])
     weather_codes = hourly_data.get('weather_code', [])
     wind_values = hourly_data.get('windspeed_10m', [])
+    precip_prob_values = hourly_data.get('precipitation_probability', [])
+    precip_amount_values = hourly_data.get('precipitation', [])
 
     uv_times = aqi_data.get('hourly', {}).get('time', [])
     uv_values = aqi_data.get('hourly', {}).get('uv_index', [])
@@ -75,10 +76,13 @@ def extract_open_meteo_conditions(hourly_data, aqi_data, units, tz, now):
 
         if i < len(weather_codes):
             code = int(weather_codes[i])
-            if code in OPEN_METEO_RAIN_CODES:
-                is_rain = True
             if code in OPEN_METEO_SNOW_CODES:
                 is_snow = True
+
+        prob = precip_prob_values[i] if i < len(precip_prob_values) else 0
+        amount = precip_amount_values[i] if i < len(precip_amount_values) else 0
+        if (prob or 0) > 50 and (amount or 0) >= 0.5:
+            is_rain = True
 
         dt_hour = dt.replace(minute=0, second=0, microsecond=0)
         uv = uv_map.get(dt_hour, 0.0)
@@ -123,8 +127,8 @@ def get_clothing_suggestions(conditions):
     else:
         suggestions.append({"label": "T-Shirt", "icon": "tshirt.png"})
 
-    # Scarf: below 2°C, or below 8°C and windy
-    if feels_like_c < 2 or (feels_like_c < 8 and max_wind_ms > 5):
+    # Scarf: below 0°C, or below 8°C and windy
+    if feels_like_c < 0 or (feels_like_c < 8 and max_wind_ms > 5):
         suggestions.append({"label": "Scarf", "icon": "scarf.png"})
 
     if feels_like_c <= 0:
