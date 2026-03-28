@@ -15,8 +15,8 @@ def _to_celsius(temp, units):
 
 
 def _get_window_end(now):
-    """Before 14:00 → check until 16:00, 14:00-21:59 → check until 22:00, 22:00+ → no recommendation."""
-    if now.hour < 14:
+    """Before 12:00 → check until 16:00, 12:00-21:59 → check until 22:00, 22:00+ → no recommendation."""
+    if now.hour < 12:
         return now.replace(hour=16, minute=0, second=0, microsecond=0)
     if now.hour < 22:
         return now.replace(hour=22, minute=0, second=0, microsecond=0)
@@ -143,7 +143,7 @@ def get_clothing_suggestions(conditions):
         uv = float(uv_index)
         if is_day and uv >= 6:
             suggestions.append({"label": "Suncream", "icon": "suncream.png"})
-        if is_day and uv >= 3 and feels_like_c > 10:
+        if is_day and uv >= 4 and feels_like_c > 15:
             suggestions.append({"label": "Sunglasses", "icon": "sunglasses.png"})
     except (ValueError, TypeError):
         pass
