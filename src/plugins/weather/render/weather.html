@@ -156,7 +156,7 @@
           const img = new Image();
           img.src = weatherIconsPaths[i];
           const xPos = point.x - (iconSize / 2);
-          const yPos = bottom + 5;
+          const yPos = canvas.height - iconSize - 3;
       
           if (img.complete) {
             ctx.drawImage(img, xPos, yPos, iconSize, iconSize);
