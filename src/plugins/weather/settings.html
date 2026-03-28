@@ -233,7 +233,7 @@
             selectedTitle = pluginSettings.titleSelection || 'location';
             weatherProvider = pluginSettings.weatherProvider || 'OpenMeteo';
 
-            document.getElementById('customTitle').value = pluginSettings.customTitle || '';
+            document.getElementById('customTitle').value = pluginSettings.customTitle || 'Bern';
         } else {
             // set default values
             document.getElementById('latitude').value = "46.93652092224731";
@@ -245,8 +245,8 @@
             document.getElementById('displayMetrics').value = "true";
             document.getElementById('displayGraph').checked = true;
             document.getElementById('displayGraph').value = "true";
-			document.getElementById('displayRain').checked = false;
-            document.getElementById('displayRain').value = "false";
+			document.getElementById('displayRain').checked = true;
+            document.getElementById('displayRain').value = "true";
 			document.getElementById('displayGraphIcons').checked = true;
 			document.getElementById('displayGraphIcons').value = "true";
 			document.getElementById('graphIconStep').value = "2";
