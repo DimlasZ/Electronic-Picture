@@ -131,7 +131,7 @@ def get_clothing_suggestions(conditions):
     if feels_like_c < 0 or (feels_like_c < 8 and max_wind_ms > 5):
         suggestions.append({"label": "Scarf", "icon": "scarf.png"})
 
-    if feels_like_c <= 0:
+    if feels_like_c <= -5:
         suggestions.append({"label": "Gloves", "icon": "gloves.png"})
 
     # Umbrella for any rain
