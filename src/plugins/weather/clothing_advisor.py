@@ -23,7 +23,7 @@ def _get_window_end(now):
     return None
 
 
-def extract_open_meteo_conditions(hourly_data, aqi_data, units, tz, now):
+def extract_open_meteo_conditions(hourly_data, aqi_data, units, tz, now, daily_data=None):
     """Extract worst-case conditions from Open-Meteo hourly forecast window."""
     window_start = now + timedelta(minutes=15)
     window_end = _get_window_end(now)
@@ -48,6 +48,7 @@ def extract_open_meteo_conditions(hourly_data, aqi_data, units, tz, now):
             pass
 
     min_feels_like_c = None
+    max_feels_like_c = None
     max_wind = 0.0
     is_rain = False
     is_snow = False
@@ -66,6 +67,8 @@ def extract_open_meteo_conditions(hourly_data, aqi_data, units, tz, now):
             feels_c = _to_celsius(feels_like_values[i], units)
             if min_feels_like_c is None or feels_c < min_feels_like_c:
                 min_feels_like_c = feels_c
+            if max_feels_like_c is None or feels_c > max_feels_like_c:
+                max_feels_like_c = feels_c
 
         if i < len(wind_values) and wind_values[i] is not None:
             wind = float(wind_values[i])
@@ -89,13 +92,32 @@ def extract_open_meteo_conditions(hourly_data, aqi_data, units, tz, now):
         if uv > max_uv:
             max_uv = uv
 
+    is_day = False
+    if daily_data:
+        try:
+            today_str = now.strftime("%Y-%m-%d")
+            times_daily = daily_data.get("time", [])
+            sunrises = daily_data.get("sunrise", [])
+            sunsets = daily_data.get("sunset", [])
+            for i, t in enumerate(times_daily):
+                if t == today_str and i < len(sunrises) and i < len(sunsets):
+                    sunrise = datetime.fromisoformat(sunrises[i]).astimezone(tz)
+                    sunset = datetime.fromisoformat(sunsets[i]).astimezone(tz)
+                    is_day = sunrise <= now <= sunset
+                    break
+        except (ValueError, TypeError):
+            is_day = max_uv > 0
+    else:
+        is_day = max_uv > 0
+
     return {
         "feels_like_c": min_feels_like_c if min_feels_like_c is not None else 15.0,
+        "max_feels_like_c": max_feels_like_c if max_feels_like_c is not None else 15.0,
         "max_wind_ms": max_wind,
         "is_rain": is_rain,
         "is_snow": is_snow,
         "uv_index": max_uv,
-        "is_day": max_uv > 0,
+        "is_day": is_day,
     }
 
 
@@ -109,6 +131,7 @@ def get_clothing_suggestions(conditions):
         return []
 
     feels_like_c = conditions["feels_like_c"]
+    max_feels_like_c = conditions["max_feels_like_c"]
     max_wind_ms = conditions["max_wind_ms"]
     is_rain = conditions["is_rain"]
     is_snow = conditions["is_snow"]
@@ -143,7 +166,7 @@ def get_clothing_suggestions(conditions):
         uv = float(uv_index)
         if is_day and uv >= 6:
             suggestions.append({"label": "Suncream", "icon": "suncream.png"})
-        if is_day and uv >= 4 and feels_like_c > 15:
+        if is_day and uv >= 4 and max_feels_like_c > 15:
             suggestions.append({"label": "Sunglasses", "icon": "sunglasses.png"})
     except (ValueError, TypeError):
         pass

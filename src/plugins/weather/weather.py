@@ -572,7 +572,8 @@ class Weather(BasePlugin):
         })
 
         hourly_data = weather_data.get('hourly', {})
-        conditions = extract_open_meteo_conditions(hourly_data, aqi_data, units, tz, current_time)
+        daily_data = weather_data.get('daily', {})
+        conditions = extract_open_meteo_conditions(hourly_data, aqi_data, units, tz, current_time, daily_data)
         for s in get_clothing_suggestions(conditions):
             data_points.append({"label": s["label"], "measurement": "", "unit": "", "icon": self.get_plugin_dir(f'icons/{s["icon"]}')})
 
