@@ -2,6 +2,7 @@ from plugins.base_plugin.base_plugin import BasePlugin
 from plugins.weather.clothing_advisor import extract_open_meteo_conditions, get_clothing_suggestions
 from PIL import Image
 import os
+import json
 import requests
 import logging
 from datetime import datetime, timedelta, timezone, date
@@ -54,6 +55,8 @@ GEOCODING_URL = "http://api.openweathermap.org/geo/1.0/reverse?lat={lat}&lon={lo
 
 OPEN_METEO_FORECAST_URL = "https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={long}&hourly=weather_code,temperature_2m,apparent_temperature,windspeed_10m,precipitation,precipitation_probability&daily=weathercode,temperature_2m_max,temperature_2m_min,sunrise,sunset&current=temperature,windspeed,winddirection,is_day,precipitation,weather_code,apparent_temperature&timezone=auto&models=best_match&forecast_days={forecast_days}"
 OPEN_METEO_AIR_QUALITY_URL = "https://air-quality-api.open-meteo.com/v1/air-quality?latitude={lat}&longitude={long}&hourly=european_aqi,uv_index,uv_index_clear_sky&timezone=auto"
+OPEN_METEO_FORECAST_CACHE = os.path.join(os.path.dirname(__file__), "cache_forecast.json")
+OPEN_METEO_AQI_CACHE = os.path.join(os.path.dirname(__file__), "cache_aqi.json")
 OPEN_METEO_UNIT_PARAMS = {
     "standard": "temperature_unit=celsius&wind_speed_unit=ms&precipitation_unit=mm",  # temperature is converted to Kelvin later
     "metric":   "temperature_unit=celsius&wind_speed_unit=ms&precipitation_unit=mm",
@@ -619,22 +622,39 @@ class Weather(BasePlugin):
     def get_open_meteo_data(self, lat, long, units, forecast_days):
         unit_params = OPEN_METEO_UNIT_PARAMS[units]
         url = OPEN_METEO_FORECAST_URL.format(lat=lat, long=long, forecast_days=forecast_days) + f"&{unit_params}"
-        response = requests.get(url, timeout=30)
-
-        if not 200 <= response.status_code < 300:
-            logger.error(f"Failed to retrieve Open-Meteo weather data: {response.content}")
-            raise RuntimeError("Failed to retrieve Open-Meteo weather data.")
-        
-        return response.json()
+        try:
+            response = requests.get(url, timeout=30)
+            if not 200 <= response.status_code < 300:
+                logger.error(f"Failed to retrieve Open-Meteo weather data: {response.content}")
+                raise RuntimeError("Failed to retrieve Open-Meteo weather data.")
+            data = response.json()
+            with open(OPEN_METEO_FORECAST_CACHE, "w") as f:
+                json.dump(data, f)
+            return data
+        except Exception as e:
+            if os.path.exists(OPEN_METEO_FORECAST_CACHE):
+                logger.warning(f"Open-Meteo forecast API unavailable, using cached data. Reason: {e}")
+                with open(OPEN_METEO_FORECAST_CACHE) as f:
+                    return json.load(f)
+            raise
 
     def get_open_meteo_air_quality(self, lat, long):
         url = OPEN_METEO_AIR_QUALITY_URL.format(lat=lat, long=long)
-        response = requests.get(url, timeout=30)
-        if not 200 <= response.status_code < 300:
-            logger.error(f"Failed to retrieve Open-Meteo air quality data: {response.content}")
-            raise RuntimeError("Failed to retrieve Open-Meteo air quality data.")
-        
-        return response.json()
+        try:
+            response = requests.get(url, timeout=30)
+            if not 200 <= response.status_code < 300:
+                logger.error(f"Failed to retrieve Open-Meteo air quality data: {response.content}")
+                raise RuntimeError("Failed to retrieve Open-Meteo air quality data.")
+            data = response.json()
+            with open(OPEN_METEO_AQI_CACHE, "w") as f:
+                json.dump(data, f)
+            return data
+        except Exception as e:
+            if os.path.exists(OPEN_METEO_AQI_CACHE):
+                logger.warning(f"Open-Meteo AQI API unavailable, using cached data. Reason: {e}")
+                with open(OPEN_METEO_AQI_CACHE) as f:
+                    return json.load(f)
+            raise
     
     def format_time(self, dt, time_format, hour_only=False, include_am_pm=True):
         """Format datetime based on 12h or 24h preference"""
