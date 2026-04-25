@@ -24,7 +24,7 @@ from flask import Flask, request, send_from_directory
 from werkzeug.serving import is_running_from_reloader
 from config import Config
 from display.display_manager import DisplayManager
-from refresh_task import RefreshTask
+from refresh_task import RefreshTask, ManualRefresh
 from blueprints.main import main_bp
 from blueprints.settings import settings_bp
 from blueprints.plugin import plugin_bp
@@ -84,10 +84,34 @@ app.register_blueprint(apikeys_bp)
 # Register opener for HEIF/HEIC images
 register_heif_opener()
 
+BURGDORF_LOCATION = {
+    "customTitle": "Burgdorf",
+    "latitude": 47.05640399397611,
+    "longitude": 7.620327472686768,
+}
+
+def _on_button_b():
+    logger.info("Button B pressed: switching weather to Burgdorf")
+    weather_plugin = device_config.get_plugin("weather")
+    if weather_plugin is None:
+        logger.warning("Button B: no weather plugin found, ignoring.")
+        return
+    settings = {**weather_plugin.get("settings", {}), **BURGDORF_LOCATION}
+    threading.Thread(
+        target=refresh_task.manual_update,
+        args=(ManualRefresh("weather", settings),),
+        daemon=True
+    ).start()
+
 if __name__ == '__main__':
 
     # start the background refresh task
     refresh_task.start()
+
+    # register button B handler on Inky display
+    from display.inky_display import InkyDisplay
+    if isinstance(display_manager.display, InkyDisplay):
+        display_manager.display.register_button_handler("B", _on_button_b)
 
     # display default inkypi image on startup
     if device_config.get_config("startup") is True:
