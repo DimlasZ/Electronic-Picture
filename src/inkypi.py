@@ -90,26 +90,39 @@ BURGDORF_LOCATION = {
     "longitude": 7.620327472686768,
 }
 
-def _on_button_b():
-    logger.info("Button B pressed: switching weather to Burgdorf")
+LE_LANDERON_LOCATION = {
+    "customTitle": "Le Landeron",
+    "latitude": 47.053655618603486,
+    "longitude": 7.066977024078369,
+}
+
+def _get_weather_base_settings():
     playlist_manager = device_config.get_playlist_manager()
-    base_settings = {}
     for playlist in playlist_manager.playlists:
         for plugin_instance in playlist.plugins:
             if plugin_instance.plugin_id == "weather":
-                base_settings = plugin_instance.settings
-                break
-        if base_settings:
-            break
+                return plugin_instance.settings
+    return None
+
+def _trigger_weather_location(label, location):
+    base_settings = _get_weather_base_settings()
     if not base_settings:
-        logger.warning("Button B: no weather plugin instance found in any playlist, ignoring.")
+        logger.warning(f"Button {label}: no weather plugin instance found in any playlist, ignoring.")
         return
-    settings = {**base_settings, **BURGDORF_LOCATION}
+    settings = {**base_settings, **location}
     threading.Thread(
         target=refresh_task.manual_update,
         args=(ManualRefresh("weather", settings),),
         daemon=True
     ).start()
+
+def _on_button_b():
+    logger.info("Button B pressed: switching weather to Burgdorf")
+    _trigger_weather_location("B", BURGDORF_LOCATION)
+
+def _on_button_c():
+    logger.info("Button C pressed: switching weather to Le Landeron")
+    _trigger_weather_location("C", LE_LANDERON_LOCATION)
 
 if __name__ == '__main__':
 
@@ -120,6 +133,7 @@ if __name__ == '__main__':
     from display.inky_display import InkyDisplay
     if isinstance(display_manager.display, InkyDisplay):
         display_manager.display.register_button_handler("B", _on_button_b)
+        display_manager.display.register_button_handler("C", _on_button_c)
 
     # display default inkypi image on startup
     if device_config.get_config("startup") is True:
