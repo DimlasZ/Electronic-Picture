@@ -92,11 +92,19 @@ BURGDORF_LOCATION = {
 
 def _on_button_b():
     logger.info("Button B pressed: switching weather to Burgdorf")
-    weather_plugin = device_config.get_plugin("weather")
-    if weather_plugin is None:
-        logger.warning("Button B: no weather plugin found, ignoring.")
+    playlist_manager = device_config.get_playlist_manager()
+    base_settings = {}
+    for playlist in playlist_manager.playlists:
+        for plugin_instance in playlist.plugins:
+            if plugin_instance.plugin_id == "weather":
+                base_settings = plugin_instance.settings
+                break
+        if base_settings:
+            break
+    if not base_settings:
+        logger.warning("Button B: no weather plugin instance found in any playlist, ignoring.")
         return
-    settings = {**weather_plugin.get("settings", {}), **BURGDORF_LOCATION}
+    settings = {**base_settings, **BURGDORF_LOCATION}
     threading.Thread(
         target=refresh_task.manual_update,
         args=(ManualRefresh("weather", settings),),
