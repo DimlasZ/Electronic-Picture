@@ -2,8 +2,20 @@ import logging
 from inky.auto import auto
 from display.abstract_display import AbstractDisplay
 
+try:
+    import RPi.GPIO as GPIO
+    GPIO_AVAILABLE = True
+except ImportError:
+    GPIO_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
+
+BUTTONS = [5, 6, 16, 24]
+BUTTON_LABELS = ['A', 'B', 'C', 'D']
+
+def _handle_button(pin):
+    label = BUTTON_LABELS[BUTTONS.index(pin)]
+    logger.info(f"Button {label} pressed (GPIO pin {pin})")
 
 class InkyDisplay(AbstractDisplay):
 
@@ -29,6 +41,16 @@ class InkyDisplay(AbstractDisplay):
         
         self.inky_display = auto()
         self.inky_display.set_border(self.inky_display.BLACK)
+
+        # Set up button listeners for Inky Impression physical buttons (A, B, C, D)
+        if GPIO_AVAILABLE:
+            GPIO.setmode(GPIO.BCM)
+            GPIO.setup(BUTTONS, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+            for pin in BUTTONS:
+                GPIO.add_event_detect(pin, GPIO.FALLING, _handle_button, bouncetime=250)
+            logger.info("Button listeners registered for GPIO pins: %s", BUTTONS)
+        else:
+            logger.warning("RPi.GPIO not available, button listeners not registered.")
 
         # store display resolution in device config
         if not self.device_config.get_config("resolution"):
