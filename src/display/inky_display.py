@@ -43,7 +43,7 @@ class InkyDisplay(AbstractDisplay):
             self._gpio_handle = lgpio.gpiochip_open(0)
             self._gpio_callbacks = []
             for pin, label in zip(BUTTONS, BUTTON_LABELS):
-                lgpio.gpio_claim_input(self._gpio_handle, pin, lgpio.SET_PULL_UP)
+                lgpio.gpio_claim_alert(self._gpio_handle, pin, lgpio.FALLING_EDGE, lgpio.SET_PULL_UP)
                 lgpio.gpio_set_debounce_micros(self._gpio_handle, pin, 100000)
                 cb = lgpio.callback(self._gpio_handle, pin, lgpio.FALLING_EDGE,
                                     lambda chip, gpio, level, tick, l=label, p=pin:
