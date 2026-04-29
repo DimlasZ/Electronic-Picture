@@ -31,8 +31,9 @@ from blueprints.plugin import plugin_bp
 from blueprints.playlist import playlist_bp
 from blueprints.apikeys import apikeys_bp
 from jinja2 import ChoiceLoader, FileSystemLoader
-from plugins.plugin_registry import load_plugins
+from plugins.plugin_registry import load_plugins, get_plugin_instance
 from waitress import serve
+from PIL import Image
 
 
 logger = logging.getLogger(__name__)
@@ -84,17 +85,14 @@ app.register_blueprint(apikeys_bp)
 # Register opener for HEIF/HEIC images
 register_heif_opener()
 
-BURGDORF_LOCATION = {
-    "customTitle": "Burgdorf",
-    "latitude": 47.05640399397611,
-    "longitude": 7.620327472686768,
+BUTTON_LOCATIONS = {
+    "B": {"customTitle": "Burgdorf",    "latitude": 47.05640399397611,  "longitude": 7.620327472686768},
+    "C": {"customTitle": "Le Landeron", "latitude": 47.053655618603486, "longitude": 7.066977024078369},
 }
 
-LE_LANDERON_LOCATION = {
-    "customTitle": "Le Landeron",
-    "latitude": 47.053655618603486,
-    "longitude": 7.066977024078369,
-}
+# Cache: button label -> pre-generated PIL Image
+_location_cache: dict = {}
+_cache_lock = threading.Lock()
 
 def _get_weather_base_settings():
     playlist_manager = device_config.get_playlist_manager()
@@ -104,25 +102,53 @@ def _get_weather_base_settings():
                 return plugin_instance.settings
     return None
 
-def _trigger_weather_location(label, location):
-    base_settings = _get_weather_base_settings()
-    if not base_settings:
-        logger.warning(f"Button {label}: no weather plugin instance found in any playlist, ignoring.")
-        return
-    settings = {**base_settings, **location}
-    threading.Thread(
-        target=refresh_task.manual_update,
-        args=(ManualRefresh("weather", settings),),
-        daemon=True
-    ).start()
+def _prefetch_location(label, location):
+    """Generate and cache the weather image for a button location."""
+    try:
+        base_settings = _get_weather_base_settings()
+        if not base_settings:
+            return
+        settings = {**base_settings, **location}
+        plugin_config = device_config.get_plugin("weather")
+        if plugin_config is None:
+            return
+        plugin = get_plugin_instance(plugin_config)
+        logger.info(f"Pre-fetching weather image for button {label} ({location['customTitle']})")
+        image = plugin.generate_image(settings, device_config)
+        with _cache_lock:
+            _location_cache[label] = image
+        logger.info(f"Pre-fetch complete for button {label} ({location['customTitle']})")
+    except Exception:
+        logger.exception(f"Pre-fetch failed for button {label}")
+
+def _prefetch_all_locations():
+    """Pre-fetch weather images for all button locations in background threads."""
+    for label, location in BUTTON_LOCATIONS.items():
+        threading.Thread(target=_prefetch_location, args=(label, location), daemon=True).start()
+
+def _on_button_press(label):
+    location = BUTTON_LOCATIONS[label]
+    logger.info(f"Button {label} pressed: switching weather to {location['customTitle']}")
+    with _cache_lock:
+        cached_image = _location_cache.get(label)
+    if cached_image:
+        logger.info(f"Using cached image for {location['customTitle']}")
+        display_manager.display_image(cached_image)
+        # refresh cache in background for next press
+        threading.Thread(target=_prefetch_location, args=(label, location), daemon=True).start()
+    else:
+        logger.info(f"No cache yet for {location['customTitle']}, fetching now (will be slow this time)")
+        threading.Thread(
+            target=refresh_task.manual_update,
+            args=(ManualRefresh("weather", {**(_get_weather_base_settings() or {}), **location}),),
+            daemon=True
+        ).start()
 
 def _on_button_b():
-    logger.info("Button B pressed: switching weather to Burgdorf")
-    _trigger_weather_location("B", BURGDORF_LOCATION)
+    _on_button_press("B")
 
 def _on_button_c():
-    logger.info("Button C pressed: switching weather to Le Landeron")
-    _trigger_weather_location("C", LE_LANDERON_LOCATION)
+    _on_button_press("C")
 
 if __name__ == '__main__':
 
@@ -134,6 +160,15 @@ if __name__ == '__main__':
     if isinstance(display_manager.display, InkyDisplay):
         display_manager.display.register_button_handler("B", _on_button_b)
         display_manager.display.register_button_handler("C", _on_button_c)
+
+    # pre-fetch button location images now and repeat on the same interval as the playlist
+    def _prefetch_loop():
+        _prefetch_all_locations()
+        while True:
+            interval = device_config.get_config("plugin_cycle_interval_seconds", default=3600)
+            time.sleep(interval)
+            _prefetch_all_locations()
+    threading.Thread(target=_prefetch_loop, daemon=True).start()
 
     # display default inkypi image on startup
     if device_config.get_config("startup") is True:
