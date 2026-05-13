@@ -2,6 +2,7 @@ import requests
 from PIL import Image, ImageEnhance, ImageOps, ImageFilter
 from io import BytesIO
 import os
+import signal
 import logging
 import hashlib
 import tempfile
@@ -153,11 +154,24 @@ def take_screenshot(target, dimensions, timeout_ms=None):
         ]
         if timeout_ms:
             command.append(f"--timeout={timeout_ms}")
-        result = subprocess.run(command, capture_output=True, check=False)
+        proc = subprocess.Popen(command, capture_output=True, start_new_session=True)
+        try:
+            stdout, stderr = proc.communicate(timeout=120)
+            returncode = proc.returncode
+        except subprocess.TimeoutExpired:
+            os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+            proc.communicate()
+            logger.error("Screenshot timed out, killed process group")
+            return None
+        finally:
+            try:
+                os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
+            except ProcessLookupError:
+                pass
 
         # Check if the process failed or the output file is missing
-        if result.returncode != 0 or not os.path.exists(img_file_path):
-            logger.error(f"Failed to take screenshot (return code: {result.returncode})")
+        if returncode != 0 or not os.path.exists(img_file_path):
+            logger.error(f"Failed to take screenshot (return code: {returncode})")
             return None
 
         # Load the image using PIL
