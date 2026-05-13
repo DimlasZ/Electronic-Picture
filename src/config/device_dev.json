@@ -7,14 +7,26 @@
     ],
     "orientation": "horizontal",
     "plugin_order": [
+        "calendar",
+        "ai_image",
+        "ai_text",
         "clock",
+        "comic",
         "countdown",
+        "github",
         "image_album",
         "image_folder",
         "image_upload",
+        "apod",
         "image_url",
+        "newspaper",
+        "rss",
+        "screenshot",
         "todo_list",
-        "weather"
+        "unsplash",
+        "weather",
+        "wpotd",
+        "year_progress"
     ],
     "playlist_config": {
         "playlists": [
@@ -26,12 +38,12 @@
                 "current_plugin_index": null
             }
         ],
-        "active_playlist": "Default"
+        "active_playlist": null
     },
     "refresh_info": {
-        "refresh_time": "2026-03-22T18:45:03.291670+00:00",
-        "image_hash": "677fc914e3259a3ec9553742f2448e17b630dd2d7543c6e83214ff76315af080",
-        "refresh_type": "Manual Update",
-        "plugin_id": "weather"
+        "refresh_time": null,
+        "image_hash": null,
+        "refresh_type": null,
+        "plugin_id": null
     }
 }

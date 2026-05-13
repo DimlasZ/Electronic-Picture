@@ -2,8 +2,16 @@ import logging
 from inky.auto import auto
 from display.abstract_display import AbstractDisplay
 
+try:
+    import lgpio
+    GPIO_AVAILABLE = True
+except ImportError:
+    GPIO_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
+
+BUTTONS = [5, 6, 16, 24]
+BUTTON_LABELS = ['A', 'B', 'C', 'D']
 
 class InkyDisplay(AbstractDisplay):
 
@@ -29,6 +37,32 @@ class InkyDisplay(AbstractDisplay):
         
         self.inky_display = auto()
         self.inky_display.set_border(self.inky_display.BLACK)
+
+        # Set up button listeners for Inky Impression physical buttons (A, B, C, D)
+        if GPIO_AVAILABLE:
+            self._gpio_handle = lgpio.gpiochip_open(0)
+            self._gpio_callbacks = []
+            self._button_handlers = {}
+            for pin, label in zip(BUTTONS, BUTTON_LABELS):
+                lgpio.gpio_claim_alert(self._gpio_handle, pin, lgpio.FALLING_EDGE, lgpio.SET_PULL_UP)
+                lgpio.gpio_set_debounce_micros(self._gpio_handle, pin, 100000)
+                cb = lgpio.callback(self._gpio_handle, pin, lgpio.FALLING_EDGE,
+                                    lambda chip, gpio, level, tick, l=label, p=pin:
+                                    self._on_button_press(l, p))
+                self._gpio_callbacks.append(cb)
+            logger.info("Button listeners registered for GPIO pins: %s", BUTTONS)
+        else:
+            logger.warning("lgpio not available, button listeners not registered.")
+
+    def register_button_handler(self, label, handler):
+        """Register a callback for a specific button label (A, B, C, or D)."""
+        self._button_handlers[label] = handler
+
+    def _on_button_press(self, label, pin):
+        logger.info(f"Button {label} pressed (GPIO pin {pin})")
+        handler = self._button_handlers.get(label)
+        if handler:
+            handler()
 
         # store display resolution in device config
         if not self.device_config.get_config("resolution"):

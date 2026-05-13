@@ -233,11 +233,11 @@
             selectedTitle = pluginSettings.titleSelection || 'location';
             weatherProvider = pluginSettings.weatherProvider || 'OpenMeteo';
 
-            document.getElementById('customTitle').value = pluginSettings.customTitle || '';
+            document.getElementById('customTitle').value = pluginSettings.customTitle || 'Bern';
         } else {
             // set default values
-            document.getElementById('latitude').value = "46.946219320241674";
-            document.getElementById('longitude').value = "7.44873046875";
+            document.getElementById('latitude').value = "46.93652092224731";
+            document.getElementById('longitude').value = "7.439718246459961";
             document.getElementById('units').value = "metric";
             document.getElementById('displayRefreshTime').checked = true;
             document.getElementById('displayRefreshTime').value = "true";
@@ -249,12 +249,15 @@
             document.getElementById('displayRain').value = "true";
 			document.getElementById('displayGraphIcons').checked = true;
 			document.getElementById('displayGraphIcons').value = "true";
-            document.getElementById('displayForecast').checked = true;
-            document.getElementById('displayForecast').value = "true";
+			document.getElementById('graphIconStep').value = "2";
+            document.getElementById('displayForecast').checked = false;
+            document.getElementById('displayForecast').value = "false";
             document.getElementById('forecastDays').value = 5;
             document.getElementById('moonPhase').checked = false;
 			document.getElementById('moonPhase').value = "false";
             document.getElementById('weatherTimeZone').value = "locationTimeZone";
+            document.getElementById('customTitle').value = "Bern";
+            selectedTitle = 'custom';
         }
 
         document.getElementById('weatherProvider').value = weatherProvider;
