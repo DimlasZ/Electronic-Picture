@@ -154,7 +154,7 @@ def take_screenshot(target, dimensions, timeout_ms=None):
         ]
         if timeout_ms:
             command.append(f"--timeout={timeout_ms}")
-        proc = subprocess.Popen(command, capture_output=True, start_new_session=True)
+        proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, start_new_session=True)
         try:
             stdout, stderr = proc.communicate(timeout=120)
             returncode = proc.returncode
