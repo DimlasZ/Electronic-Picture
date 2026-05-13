@@ -159,15 +159,13 @@ def take_screenshot(target, dimensions, timeout_ms=None):
             stdout, stderr = proc.communicate(timeout=120)
             returncode = proc.returncode
         except subprocess.TimeoutExpired:
-            os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+            try:
+                os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+            except OSError:
+                pass
             proc.communicate()
             logger.error("Screenshot timed out, killed process group")
             return None
-        finally:
-            try:
-                os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
-            except ProcessLookupError:
-                pass
 
         # Check if the process failed or the output file is missing
         if returncode != 0 or not os.path.exists(img_file_path):
