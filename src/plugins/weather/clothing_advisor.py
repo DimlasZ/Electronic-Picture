@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 import logging
 
 logger = logging.getLogger(__name__)
@@ -25,7 +25,7 @@ def _get_window_end(now):
 
 def extract_open_meteo_conditions(hourly_data, aqi_data, units, tz, now, daily_data=None):
     """Extract worst-case conditions from Open-Meteo hourly forecast window."""
-    window_start = now + timedelta(minutes=15)
+    window_start = now
     window_end = _get_window_end(now)
     if window_end is None:
         return None
@@ -84,7 +84,7 @@ def extract_open_meteo_conditions(hourly_data, aqi_data, units, tz, now, daily_d
 
         prob = precip_prob_values[i] if i < len(precip_prob_values) else 0
         amount = precip_amount_values[i] if i < len(precip_amount_values) else 0
-        if (prob or 0) > 50 and (amount or 0) >= 0.5:
+        if (prob or 0) > 30 and (amount or 0) >= 0.4:
             is_rain = True
 
         dt_hour = dt.replace(minute=0, second=0, microsecond=0)
