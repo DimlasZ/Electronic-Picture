@@ -3,6 +3,7 @@ from plugins.weather.clothing_advisor import extract_open_meteo_conditions, get_
 from PIL import Image
 import os
 import json
+import tempfile
 import requests
 import logging
 from datetime import datetime, timedelta, timezone, date
@@ -629,15 +630,22 @@ class Weather(BasePlugin):
                 logger.error(f"Failed to retrieve Open-Meteo weather data: {response.content}")
                 raise RuntimeError("Failed to retrieve Open-Meteo weather data.")
             data = response.json()
-            with open(OPEN_METEO_FORECAST_CACHE, "w") as f:
-                json.dump(data, f)
-            return data
         except Exception as e:
             if os.path.exists(OPEN_METEO_FORECAST_CACHE):
                 logger.warning(f"Open-Meteo forecast API unavailable, using cached data. Reason: {e}")
-                with open(OPEN_METEO_FORECAST_CACHE) as f:
-                    return json.load(f)
+                try:
+                    with open(OPEN_METEO_FORECAST_CACHE) as f:
+                        return json.load(f)
+                except json.JSONDecodeError:
+                    logger.error("Forecast cache is corrupted, deleting it.")
+                    os.remove(OPEN_METEO_FORECAST_CACHE)
             raise
+        dir_ = os.path.dirname(OPEN_METEO_FORECAST_CACHE)
+        with tempfile.NamedTemporaryFile("w", dir=dir_, delete=False, suffix=".tmp") as tmp:
+            json.dump(data, tmp)
+            tmp_path = tmp.name
+        os.replace(tmp_path, OPEN_METEO_FORECAST_CACHE)
+        return data
 
     def get_open_meteo_air_quality(self, lat, long):
         url = OPEN_METEO_AIR_QUALITY_URL.format(lat=lat, long=long)
@@ -647,15 +655,22 @@ class Weather(BasePlugin):
                 logger.error(f"Failed to retrieve Open-Meteo air quality data: {response.content}")
                 raise RuntimeError("Failed to retrieve Open-Meteo air quality data.")
             data = response.json()
-            with open(OPEN_METEO_AQI_CACHE, "w") as f:
-                json.dump(data, f)
-            return data
         except Exception as e:
             if os.path.exists(OPEN_METEO_AQI_CACHE):
                 logger.warning(f"Open-Meteo AQI API unavailable, using cached data. Reason: {e}")
-                with open(OPEN_METEO_AQI_CACHE) as f:
-                    return json.load(f)
+                try:
+                    with open(OPEN_METEO_AQI_CACHE) as f:
+                        return json.load(f)
+                except json.JSONDecodeError:
+                    logger.error("AQI cache is corrupted, deleting it.")
+                    os.remove(OPEN_METEO_AQI_CACHE)
             raise
+        dir_ = os.path.dirname(OPEN_METEO_AQI_CACHE)
+        with tempfile.NamedTemporaryFile("w", dir=dir_, delete=False, suffix=".tmp") as tmp:
+            json.dump(data, tmp)
+            tmp_path = tmp.name
+        os.replace(tmp_path, OPEN_METEO_AQI_CACHE)
+        return data
     
     def format_time(self, dt, time_format, hour_only=False, include_am_pm=True):
         """Format datetime based on 12h or 24h preference"""
