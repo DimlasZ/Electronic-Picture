@@ -210,7 +210,7 @@ class Clock(BasePlugin):
             border[1] += (h-w)/2
 
         # nudge the whole grid ~2mm (≈10px @ 800x480) farther down
-        border[1] += 10
+        border[1] += 30
 
         letter_positions = Clock.translate_word_grid_positions_ch(time.hour % 12, time.minute)
 
