@@ -209,11 +209,12 @@ class Clock(BasePlugin):
         elif h > w:
             border[1] += (h-w)/2
 
-        # nudge the whole grid ~2mm (≈10px @ 800x480) farther down
-        border[1] += 30
+        # nudge the whole grid farther down, applied to y_pos only
+        # so it doesn't shrink canvas_size (which keeps the clock full size)
+        y_offset = 30
 
         letter_positions = Clock.translate_word_grid_positions_ch(time.hour % 12, time.minute)
-
+                        
         letter_grid = [
             ['E','S','K','I','S','C','H','A','F','Ü','F'],
             ['V','I','E','R','T','U','B','F','Z','Ä','Ä'],
@@ -231,7 +232,7 @@ class Clock(BasePlugin):
         for y, row in enumerate(letter_grid):
             for x, letter in enumerate(row):
                 x_pos = x*(canvas_size/(len(row)-1)) + border[0]
-                y_pos = y*(canvas_size/(len(letter_grid)-1)) + border[1]
+                y_pos = y*(canvas_size/(len(letter_grid)-1)) + border[1] + y_offset
 
                 fill=secondary_color+(50,)
                 if [y,x] in letter_positions:
