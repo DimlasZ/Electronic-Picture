@@ -211,7 +211,7 @@ class Clock(BasePlugin):
 
         # nudge the whole grid farther down, applied to y_pos only
         # so it doesn't shrink canvas_size (which keeps the clock full size)
-        y_offset = 30
+        y_offset = 15
 
         letter_positions = Clock.translate_word_grid_positions_ch(time.hour % 12, time.minute)
                         
