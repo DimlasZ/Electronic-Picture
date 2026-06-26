@@ -15,7 +15,7 @@
   height: 100%;
   font-family: "Jost";
   /* scale whole layout to 95% so nothing runs off the screen edges */
-  transform: scale(0.95);
+  transform: scale(0.90);
   transform-origin: center center;
 }
 
