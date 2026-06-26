@@ -146,7 +146,12 @@
       id: 'chartIcons',
       afterDatasetsDraw(chart) {
         const { ctx, chartArea: { bottom }, scales: { x } } = chart;
-        const iconSize = 45;
+
+        // size icons to the actual gap between shown points so they never overlap
+        const shown = chart.getDatasetMeta(0).data.filter((_, i) => i % iconStep === 0);
+        let gap = Infinity;
+        for (let k = 1; k < shown.length; k++) gap = Math.min(gap, shown[k].x - shown[k - 1].x);
+        const iconSize = Math.min(45, Math.floor(gap * 0.9));
 
         ctx.save();
         chart.getDatasetMeta(0).data.forEach((point, i) => {
